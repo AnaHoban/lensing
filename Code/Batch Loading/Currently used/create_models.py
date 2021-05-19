@@ -16,6 +16,7 @@ def custom_loss_all(y_true, y_pred):
 #### MODELS ####
 
 def create_autoencoder1(shape):
+    '''Autoencoder with pooling layers'''
     input_img = keras.Input(shape=shape)
     
     x = keras.layers.Conv2D(16, kernel_size=3, activation='relu', padding='same')(input_img)
@@ -32,5 +33,24 @@ def create_autoencoder1(shape):
     x = keras.layers.UpSampling2D((2,2))(x)
     x = keras.layers.Conv2DTranspose(16, kernel_size=3, activation='relu', padding='same')(x)
     decoded = keras.layers.Conv2D(shape[2], (3,3), activation='linear', padding='same')(x)
+    
+    return keras.Model(input_img, decoded)
+
+
+def create_autoencoder2(shape):
+    '''Autoencoder with convolutional layers'''
+    input_img = keras.Input(shape=shape)
+    x = keras.layers.Conv2D(16, kernel_size=3, activation='relu', padding='same')(input_img)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.Conv2D(32, kernel_size=3, activation='relu', padding='same')(x)
+    x = keras.layers.BatchNormalization()(x)
+
+    y = keras.layers.Conv2D(32, kernel_size=3, activation='relu', padding='same')(input_img)
+    y = keras.layers.BatchNormalization()(y)
+    encoded = keras.layers.Add()([x,y])
+    
+    x = keras.layers.Conv2DTranspose(32, kernel_size=4, activation='relu', padding='same')(encoded)
+    x = keras.layers.Conv2DTranspose(16, kernel_size=4, activation='relu', padding='same')(x)
+    decoded = keras.layers.Conv2D(shape[2], kernel_size=3, activation='linear', padding='same')(x)
     
     return keras.Model(input_img, decoded)
