@@ -145,13 +145,39 @@ def plot_loss_curves(history, figname):
     
 def plot_images(images, band):
     ''' plots 9 images for 1 band'''
-    fig, axes = plt.subplots(3,3, figsize=(8,8))
-    i = 0
-    for row in range(3):
-        for col in range(3):
-            norm = ImageNormalize(images[i][:,:,band], interval=ZScaleInterval())
-            axes[row][col].imshow(images[i][:,:,band], norm=norm)
-            i += 1
+    if len(bands)==5:
+        fig, axes = plt.subplots(3,3, figsize=(8,8))
+        i = 0
+        for row in range(3):
+            for col in range(3):
+                norm = ImageNormalize(images[i][:,:,band], interval=ZScaleInterval())
+                axes[row][col].imshow(images[i][:,:,band], norm=norm)
+                i += 1
+    #cfis
+    if len(bands)==2:
+            #plots source, reconstructed and residuals for 1 image (start = index) for all bands
+        fig, axes = plt.subplots(images.shape[0],len(bands), figsize=(2,20))
+        fig.subplots_adjust(left=0.02, bottom=0.06, right=0.95, top=0.94, wspace=0.45)
+        for row in range(images.shape[0]):
+            for col in range(len(bands)):
+                norm = ImageNormalize(images[row,:,:,col], interval=ZScaleInterval())
+                im = axes[row][col].imshow(images[row,:,:,col], norm=norm)
+                #fig.colorbar(im, fraction=0.045, ax=axes[row][col])
+                if row == 0:
+                    axes[row][col].set_title(bands[col])
+        #plt.savefig("../Plots/" + figname)
+    if len(bands)==3:
+            #plots source, reconstructed and residuals for 1 image (start = index) for all bands
+        fig, axes = plt.subplots(images.shape[0],len(bands), figsize=(4,50))
+        fig.subplots_adjust(left=0.02, bottom=0.06, right=0.95, top=0.94, wspace=0.45)
+        for row in range(images.shape[0]):
+            for col in range(len(bands)):
+                norm = ImageNormalize(images[row,:,:,col], interval=ZScaleInterval())
+                im = axes[row][col].imshow(images[row,:,:,col], norm=norm)
+                #fig.colorbar(im, fraction=0.045, ax=axes[row][col])
+                if row == 0:
+                    axes[row][col].set_title(bands[col])
+        #plt.savefig("../Plots/" + figname)
             
 def plot_1_cutout(images, weights, figname, bands, start=0):
     '''plots source, reconstructed and residuals for 1 image (start = index) for all bands and weight maps'''
@@ -201,22 +227,44 @@ def min_max_pixels(images, bands, start=0):
         
 def plot_hist(images, wts, figname, bands, start=0):
     '''plots histogram of source, reconstructed and residuals for 1 image (start = index) for all bands '''
-    fig, axes = plt.subplots(images.shape[0],len(bands), figsize=(20,8))
-    for row in range(images.shape[0]):
-        for col in range(len(bands)):
-            mean = np.mean(images[row,start,:,:,col])
-            std = np.std(images[row,start,:,:,col])
-            if row == 2:
-                x = images[0,start,:,:,col]
-                xr = images[1,start,:,:,col]
-                axes[row][col].hist((np.sqrt(wts[start,:,:,col])*(x-xr)).ravel())
-            else:
-                axes[row][col].hist(images[row,start,:,:,col].ravel())
-            axes[row][col].set_ylim(top=4000)
-            #xlim = axes[row][col].get_xlim()[1]
-            #ylim = axes[row][col].get_ylim()[1]
-            #axes[row][col].annotate(r"$\mu={:.4f}$".format(mean), (0.7*xlim, 0.7*ylim))
-            #axes[row][col].annotate(r"$\sigma={:.4f}$".format(std), (0.7*xlim, 0.6*ylim))
-            if row == 0:
-                axes[row][col].set_title(bands[col])
-    plt.savefig("../Histograms/" + figname)
+    if len(bands) == 5:
+        fig, axes = plt.subplots(images.shape[0],len(bands), figsize=(20,8))
+        for row in range(images.shape[0]):
+            for col in range(len(bands)):
+                mean = np.mean(images[row,start,:,:,col])
+                std = np.std(images[row,start,:,:,col])
+                if row == 2:
+                    x = images[0,start,:,:,col]
+                    xr = images[1,start,:,:,col]
+                    axes[row][col].hist((np.sqrt(wts[start,:,:,col])*(x-xr)).ravel())
+                else:
+                    axes[row][col].hist(images[row,start,:,:,col].ravel())
+                axes[row][col].set_ylim(top=4000)
+                #xlim = axes[row][col].get_xlim()[1]
+                #ylim = axes[row][col].get_ylim()[1]
+                #axes[row][col].annotate(r"$\mu={:.4f}$".format(mean), (0.7*xlim, 0.7*ylim))
+                #axes[row][col].annotate(r"$\sigma={:.4f}$".format(std), (0.7*xlim, 0.6*ylim))
+                if row == 0:
+                    axes[row][col].set_title(bands[col])
+        plt.savefig("../Histograms/" + figname)
+    
+    if len(bands) == 2: 
+        fig, axes = plt.subplots(images.shape[0],len(bands), figsize=(5,10))
+        for row in range(images.shape[0]):
+            for col in range(len(bands)):
+                mean = np.mean(images[row,:,:,col])
+                std = np.std(images[row,:,:,col])
+                #if row == 2:
+                 #   x = images[0,:,:,col]
+                 #   xr = images[1,:,:,col]
+                 #   axes[row][col].hist((np.sqrt(wts[:,:,col])*(x-xr)).ravel())
+                #else:
+                axes[row][col].hist(images[row,:,:,col].ravel())
+                axes[row][col].set_ylim(top=4000)
+                #xlim = axes[row][col].get_xlim()[1]
+                #ylim = axes[row][col].get_ylim()[1]
+                #axes[row][col].annotate(r"$\mu={:.4f}$".format(mean), (0.7*xlim, 0.7*ylim))
+                #axes[row][col].annotate(r"$\sigma={:.4f}$".format(std), (0.7*xlim, 0.6*ylim))
+                if row == 0:
+                    axes[row][col].set_title(bands[col])
+        plt.savefig("../Histograms/" + figname)
