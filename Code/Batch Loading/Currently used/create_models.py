@@ -54,3 +54,12 @@ def create_autoencoder2(shape):
     decoded = keras.layers.Conv2D(shape[2], kernel_size=3, activation='linear', padding='same')(x)
     
     return keras.Model(input_img, decoded)
+
+def create_classifier(encoder):
+    '''Binary classifier'''
+    model = keras.Sequential(encoder)
+    model.add(keras.layers.Flatten())
+    model.add(keras.layers.Dense(128))
+    model.add(keras.layers.Dense(64))
+    model.add(keras.layers.Dense(1, activation="sigmoid"))   
+    return model
