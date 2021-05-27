@@ -16,7 +16,7 @@ import umap
 from sklearn.preprocessing import StandardScaler
 
 #global variables
-cutout_size = 128
+cutout_size = 64
 
 #hd5 file
 cutout_dir = os.path.expandvars("$SCRATCH") + "/"

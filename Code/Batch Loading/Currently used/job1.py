@@ -28,15 +28,15 @@ hf = h5py.File(cutout_dir + "cutouts_filtered_64p.h5", "r")
 ##TRAINING PREP##
 BATCH_SIZE  = 256 
 CUTOUT_SIZE = 64
-N_EPOCHS    = 2 #50 
+N_EPOCHS    = 50 
 
 # tiles for val and training
-train_indices = [1] #range(27)
+train_indices = range(27)
 val_indices = [28]
 
 #autosave
 model_checkpoint_file = "../Models/autoencoder_28tiles_50epochs.h5"
-model_checkpoint_callback = ModelCheckpoint(model_checkpoint_file, monitor='loss', mode='min',verbose=1, save_best_only=False)
+model_checkpoint_callback = ModelCheckpoint(model_checkpoint_file, monitor='val_loss', mode='min',verbose=1, save_best_only=True)
 
 
 #training
