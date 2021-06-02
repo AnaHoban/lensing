@@ -43,14 +43,17 @@ def create_cutouts(img, wt, x, y, band):
     img_cutout[np.isnan(img_cutout)] = 0
     wt_cutout[np.isnan(wt_cutout)] = 0
     
-    img_lower = np.percentile(img_cutout, 1)
-    img_upper = np.percentile(img_cutout, 99)
+    img_lower = np.percentile(img_cutout, 0.001)
+    img_upper = np.percentile(img_cutout, 99.999)
+    
+    img_cutout[img_cutout<img_lower] = img_lower
+    img_cutout[img_cutout>img_upper] = img_upper
     
     if img_lower == img_upper:
         img_norm = np.zeros((cutout_size, cutout_size))
     else:
         img_norm = (img_cutout - np.min(img_cutout)) / (img_upper - img_lower)
-    if (band != "u" or band != "r") and img_upper != img_lower: # Alter weights for PS1
+    if band in ["i", "g", 'z']: # Alter weights for PS1
         wt_norm = (wt_cutout - np.min(wt_cutout)) / (img_upper - img_lower)
     else: # Do not alter weights for CFIS
         wt_norm = wt_cutout

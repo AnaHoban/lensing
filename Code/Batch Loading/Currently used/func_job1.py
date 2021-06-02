@@ -48,8 +48,8 @@ def get_test_cutouts(index, tile_ids, n_cutouts, cutout_size, bands="cfis", star
         weights[n,:,:,:] = np.array(wt_group.get(f"c{i}"))[:,:,band_indices]
         n += 1
         if n == n_cutouts:
-            #return sources #if no weights
-            return np.concatenate((sources, weights),axis=-1) #if we train with weights
+            return sources #if no weights
+            #return np.concatenate((sources, weights),axis=-1) #if we train with weights
         
 def get_cutouts(hf, tile_ids,tile_indices, batch_size, cutout_size, bands="all"):
     ''' Input: hf file, tile indices, batch size, dimensions, band and bands
@@ -80,8 +80,8 @@ def get_cutouts(hf, tile_ids,tile_indices, batch_size, cutout_size, bands="all")
                 b += 1
                 if b == batch_size:
                     b = 0
-                    #yield (sources,sources)# no weights
-                    yield (np.concatenate((sources, weights), axis = -1), sources) #with weights
+                    yield (sources,sources)# no weights
+                    #yield (np.concatenate((sources, weights), axis = -1), sources) #with weights
                     
                     
 def train_autoencoder(hf, tile_ids, model, train_indices, val_indices, n_epochs, batch_size, cutout_size, all_callbacks, bands="all"):
@@ -105,9 +105,9 @@ def train_autoencoder(hf, tile_ids, model, train_indices, val_indices, n_epochs,
     return model, history
 
 def create_autoencoder2(shape):
-    input_all = keras.Input(shape=shape)
-    weights = input_all[...,shape[-1]//2:]
-    input_imgs = input_all[...,:shape[-1]//2]
+    input_imgs = keras.Input(shape=shape)
+    #weights = input_all[...,shape[-1]//2:]
+    #input_imgs = input_all[...,:shape[-1]//2]
     x = keras.layers.Conv2D(16, kernel_size=3, activation='relu', padding='same')(input_imgs)
     x = keras.layers.BatchNormalization()(x)
     x = keras.layers.Conv2D(32, kernel_size=3, activation='relu', padding='same')(x)
@@ -121,20 +121,19 @@ def create_autoencoder2(shape):
     x = keras.layers.Conv2DTranspose(16, kernel_size=4, activation='relu', padding='same')(x)
     
     #weights
-    decoded_img = keras.layers.Conv2D(shape[2] // 2, kernel_size=3, activation='linear', padding='same')(x)
-    decoded_all = tf.concat([decoded_img, weights], axis = -1)
+    decoded_img = keras.layers.Conv2D(1, kernel_size=3, activation='linear', padding='same')(x)
+    #decoded_all = tf.concat([decoded_img, weights], axis = -1)
     
     #no weights
     #decoded_all = keras.layers.Conv2D(shape[2], kernel_size=3,activation='relu', padding = 'same')(x)                                  
     
-    return keras.Model(input_all, decoded_all)
+    return keras.Model(input_imgs, decoded_img)
 
 
-bands = 2
+bands = 1
 def masked_MSE_with_uncertainty(y_true, y_pred): 
-    weights = y_pred[...,bands:] 
-    y_pred_image = y_pred[...,:bands]
+    #weights = y_pred[...,bands:] 
+    #y_pred_image = y_pred[...,:bands]
     
-    return K.square(tf.math.multiply((y_true - y_pred_image), weights) )
-    #return K.square(tf.math.multiply((y_true - y_pred), 1) ) #no weights
-    #return tf.abs(K.square(tf.math.multiply((y_true - y_pred_image), weights) ) - b) + b #weights
+    #return K.square(tf.math.multiply((y_true - y_pred_image), weights) )
+    return K.square(tf.math.multiply((y_true - y_pred), 1) ) #no weights
