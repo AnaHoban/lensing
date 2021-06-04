@@ -15,6 +15,11 @@ from sklearn.utils import shuffle
 import umap
 from sklearn.preprocessing import StandardScaler
 
+import tensorflow as tf
+from tensorflow import keras
+import tensorflow.keras.backend as K
+from tensorflow.keras.callbacks import ModelCheckpoint
+
 #global variables
 cutout_size = 64
 
@@ -88,6 +93,7 @@ def get_test_cutouts(index, n_cutouts, bands="all", start=0):
         if n == n_cutouts:
             return (sources, weights)
         
+        
 def get_cutouts(tile_indices, batch_size, bands="all"):
     ''' Input: hf file, tile indices, batch size, dimensions, band and bands
         Output: the img and weight cutouts for the test set as (batch_size, pix, pix, channels) '''
@@ -117,10 +123,10 @@ def get_cutouts(tile_indices, batch_size, bands="all"):
                 b += 1
                 if b == batch_size:
                     b = 0
-                    yield (sources, sources)
+                    #yield (sources, sources)
+                    yield np.concatenate((sources, weights),axis=-1) #if we train with weights
 
-def train_autoencoder(model, train_indices, val_indices, n_epochs, batch_size, bands="all"):
-    '''Training autoencoders given the compiled model'''
+def train_autoencoder(hf, tile_ids, model, train_indices, val_indices, n_epochs, batch_size, cutout_size, all_callbacks = None, bands="all"):
     n_cutouts_train = 0
     for i in train_indices:
         img_group = hf.get(tile_ids[i] + "/IMAGES")        
@@ -134,12 +140,45 @@ def train_autoencoder(model, train_indices, val_indices, n_epochs, batch_size, b
     train_steps = n_cutouts_train // batch_size
     val_steps = n_cutouts_val // batch_size
     
-    history = model.fit(get_cutouts(train_indices, batch_size, bands), 
+    history = model.fit(get_cutouts(hf, tile_ids, train_indices, batch_size, cutout_size, bands), 
                         epochs=n_epochs, steps_per_epoch=train_steps, 
-                        validation_data=get_cutouts(val_indices, batch_size, bands), 
-                        validation_steps=val_steps)
+                        validation_data=get_cutouts(hf, tile_ids, val_indices, batch_size, cutout_size, bands), 
+                        validation_steps=val_steps, callbacks= all_callbacks)
     return model, history
 
+def create_autoencoder2(shape):
+    input_all = keras.Input(shape=shape)
+    weights = input_all[...,shape[-1]//2:]
+    input_imgs = input_all[...,:shape[-1]//2]
+    x = keras.layers.Conv2D(16, kernel_size=3, activation='relu', padding='same')(input_imgs)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.Conv2D(32, kernel_size=3, activation='relu', padding='same')(x)
+    x = keras.layers.BatchNormalization()(x)
+
+    y = keras.layers.Conv2D(32, kernel_size=3, activation='relu', padding='same')(input_imgs)
+    y = keras.layers.BatchNormalization()(y)
+    encoded = keras.layers.Add()([x,y])
+    
+    x = keras.layers.Conv2DTranspose(32, kernel_size=4, activation='relu', padding='same')(encoded)
+    x = keras.layers.Conv2DTranspose(16, kernel_size=4, activation='relu', padding='same')(x)
+    
+    #weights
+    decoded_img = keras.layers.Conv2D(shape[2] // 2, kernel_size=3, activation='linear', padding='same')(x)
+    decoded_all = tf.concat([decoded_img, weights], axis = -1)
+    
+    #no weights
+    #decoded_all = keras.layers.Conv2D(shape[2], kernel_size=3,activation='relu', padding = 'same')(x)                                  
+    
+    return keras.Model(input_all, decoded_all)
+
+
+bands = 2
+def MSE_with_uncertainty(y_true, y_pred): 
+    weights = y_pred[...,bands:] 
+    y_pred_image = y_pred[...,:bands]
+    
+    return K.square(tf.math.multiply((y_true - y_pred_image), weights) )
+    #return K.square(tf.math.multiply((y_true - y_pred), 1) ) #no weights
 #### PLOTTING ####
 def plot_loss_curves(history, figname):
     '''Plots loss curves and saves it in ../Loss Curves subdir'''

@@ -30,7 +30,7 @@ def get_test_cutouts(index, tile_ids, n_cutouts, cutout_size, bands="cfis", star
         
         
     elif bands == "cfis":
-        band_indices = [0,2]
+        band_indices = [2]
         l = len(band_indices)
         sources = np.zeros((n_cutouts, cutout_size, cutout_size, l))
         weights = np.zeros((n_cutouts, cutout_size, cutout_size, l))
@@ -48,8 +48,8 @@ def get_test_cutouts(index, tile_ids, n_cutouts, cutout_size, bands="cfis", star
         weights[n,:,:,:] = np.array(wt_group.get(f"c{i}"))[:,:,band_indices]
         n += 1
         if n == n_cutouts:
-            return sources #if no weights
-            #return np.concatenate((sources, weights),axis=-1) #if we train with weights
+            #return sources #if no weights
+            return np.concatenate((sources, weights),axis=-1) #if we train with weights
         
 def get_cutouts(hf, tile_ids,tile_indices, batch_size, cutout_size, bands="all"):
     ''' Input: hf file, tile indices, batch size, dimensions, band and bands
@@ -58,7 +58,7 @@ def get_cutouts(hf, tile_ids,tile_indices, batch_size, cutout_size, bands="all")
     if bands == "all":
         band_indices = [0, 1, 2, 3, 4]
     elif bands == "cfis":
-        band_indices = [0,2]
+        band_indices = [2]
         l = len(band_indices)
     elif bands == "ps1":
         band_indices = [1, 3, 4]
@@ -80,11 +80,12 @@ def get_cutouts(hf, tile_ids,tile_indices, batch_size, cutout_size, bands="all")
                 b += 1
                 if b == batch_size:
                     b = 0
-                    yield (sources,sources)# no weights
-                    #yield (np.concatenate((sources, weights), axis = -1), sources) #with weights
+                    
+                    #yield (sources,sources)# no weights
+                    yield (np.concatenate((sources, weights), axis = -1), sources) #with weights
                     
                     
-def train_autoencoder(hf, tile_ids, model, train_indices, val_indices, n_epochs, batch_size, cutout_size, all_callbacks, bands="all"):
+def train_autoencoder(hf, tile_ids, model, train_indices, val_indices, n_epochs, batch_size, cutout_size, all_callbacks = None, bands="all"):
     n_cutouts_train = 0
     for i in train_indices:
         img_group = hf.get(tile_ids[i] + "/IMAGES")        
@@ -104,10 +105,11 @@ def train_autoencoder(hf, tile_ids, model, train_indices, val_indices, n_epochs,
                         validation_steps=val_steps, callbacks= all_callbacks)
     return model, history
 
+
 def create_autoencoder2(shape):
-    input_imgs = keras.Input(shape=shape)
-    #weights = input_all[...,shape[-1]//2:]
-    #input_imgs = input_all[...,:shape[-1]//2]
+    input_all = keras.Input(shape=shape)
+    weights = input_all[...,shape[-1]//2:]
+    input_imgs = input_all[...,:shape[-1]//2]
     x = keras.layers.Conv2D(16, kernel_size=3, activation='relu', padding='same')(input_imgs)
     x = keras.layers.BatchNormalization()(x)
     x = keras.layers.Conv2D(32, kernel_size=3, activation='relu', padding='same')(x)
@@ -121,19 +123,20 @@ def create_autoencoder2(shape):
     x = keras.layers.Conv2DTranspose(16, kernel_size=4, activation='relu', padding='same')(x)
     
     #weights
-    decoded_img = keras.layers.Conv2D(1, kernel_size=3, activation='linear', padding='same')(x)
-    #decoded_all = tf.concat([decoded_img, weights], axis = -1)
+    decoded_img = keras.layers.Conv2D(shape[2] // 2, kernel_size=3, activation='linear', padding='same')(x)
+    decoded_all = tf.concat([decoded_img, weights], axis = -1)
     
     #no weights
     #decoded_all = keras.layers.Conv2D(shape[2], kernel_size=3,activation='relu', padding = 'same')(x)                                  
     
-    return keras.Model(input_imgs, decoded_img)
+    return keras.Model(input_all, decoded_all)
+
 
 
 bands = 1
-def masked_MSE_with_uncertainty(y_true, y_pred): 
-    #weights = y_pred[...,bands:] 
-    #y_pred_image = y_pred[...,:bands]
+def MSE_with_uncertainty(y_true, y_pred): 
+    weights = y_pred[...,bands:] 
+    y_pred_image = y_pred[...,:bands]
     
-    #return K.square(tf.math.multiply((y_true - y_pred_image), weights) )
-    return K.square(tf.math.multiply((y_true - y_pred), 1) ) #no weights
+    return K.square(tf.math.multiply((y_true - y_pred_image), weights) )
+    #return K.square(tf.math.multiply((y_true - y_pred), 1) ) #no weights

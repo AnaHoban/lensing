@@ -1,4 +1,4 @@
-''' Training auto-encoder with two bands and weigths for 50 epochs with ~ 250 000 cutouts'''
+''' Training auto-encoder with one band and weigths for 50 epochs with ~ 250 000 cutouts'''
 
 import os
 import h5py
@@ -23,7 +23,7 @@ for tile in tile_list:
 tile_list.close()
 
 #cutouts file
-hf = h5py.File(cutout_dir + "cutouts_filtered_64p_r.h5", "r")
+hf = h5py.File(cutout_dir + "cutouts_filtered_64p.h5", "r")
 
 ##TRAINING PREP##
 BATCH_SIZE  = 256 
@@ -35,23 +35,23 @@ train_indices = range(17)
 val_indices = [19]
 
 #autosave
-model_checkpoint_file = "../Models/autoencoder_28tiles_50epochs.h5"
+model_checkpoint_file = "../Models/job4.h5"
 model_checkpoint_callback = ModelCheckpoint(model_checkpoint_file, monitor='val_loss', mode='min',verbose=1, save_best_only=True)
 
 
 #training
-bands = 2
+bands = 1
 autoencoder_cfis = create_autoencoder2((CUTOUT_SIZE, CUTOUT_SIZE, bands*2)) #last is the number of channels
-autoencoder_cfis.compile(optimizer="adam", loss=masked_MSE_with_uncertainty)
+autoencoder_cfis.compile(optimizer="adam", loss=MSE_with_uncertainty)
 
 (autoencoder_cfis, history_cfis) = train_autoencoder(hf, tile_ids, autoencoder_cfis, train_indices,  val_indices, batch_size=BATCH_SIZE, cutout_size=CUTOUT_SIZE, n_epochs= N_EPOCHS,all_callbacks = [model_checkpoint_callback], bands="cfis")
 
 hf.close()
 
 #saving model
-autoencoder_cfis.save("../Models/autoencoder_cfis_64p_job2")
+autoencoder_cfis.save("../Models/job4")
 hist_df = pd.DataFrame(history_cfis.history) 
 
-hist_csv_file = '../Histories/history_cfis_64p_job2.csv'
+hist_csv_file = '../Histories/job4.csv'
 with open(hist_csv_file, mode='a') as f:
     hist_df.to_csv(f)
