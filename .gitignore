@@ -9,4 +9,3 @@
 /Code/Batch Loading/Currently used/__pycache__/*
 /Code/Batch Loading/Currently used/job_outputs/*
 /Code/Batch Loading/Currently used/wandb/*
-*.out
