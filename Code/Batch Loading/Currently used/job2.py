@@ -11,19 +11,20 @@ from tensorflow import keras
 import tensorflow.keras.backend as K
 from func_job2 import *
 from tensorflow.keras.callbacks import ModelCheckpoint
+import csv
 
-tile_list = open(image_dir + "tiles.list", "r")
-tile_ids = []
+cutout_dir = os.path.expandvars("$SCRATCH") + '/'
+image_dir = "/home/anahoban/projects/rrg-kyi/astro/cfis/W3/"
 
-for tile in tile_list:
-    tile = tile[:-1] # Remove new line character
-    channels = tile.split(" ")
-    if len(channels) == 5: # Order is u,g,r,i,z
-        tile_ids.append(channels[0][5:12]) # XXX.XXX id
-tile_list.close()
+with open(cutout_dir + 'tiles_unbalanced.csv', newline='') as f:
+    reader = csv.reader(f)
+    data  = list(reader)
+f.close()
+
+tile_ids = data[0]
 
 #cutouts file
-hf = h5py.File(cutout_dir + "cutouts_filtered_64p.h5", "r")
+hf = h5py.File(cutout_dir + "test.h5", "r")
 
 ##TRAINING PREP##
 BATCH_SIZE  = 256 
@@ -31,11 +32,11 @@ CUTOUT_SIZE = 64
 N_EPOCHS    = 35 
 
 # tiles for val and training
-train_indices = range(14)
-val_indices = [19]
+train_indices = range(17)
+val_indices = [18]
 
 #autosave
-model_checkpoint_file = "../Models/job5.h5"
+model_checkpoint_file = "../Models/job6.h5"
 model_checkpoint_callback = ModelCheckpoint(model_checkpoint_file, monitor='val_loss', mode='min',verbose=1, save_best_only=True)
 
 
@@ -49,9 +50,9 @@ autoencoder_cfis.compile(optimizer="adam", loss=MSE_with_uncertainty)
 hf.close()
 
 #saving model
-autoencoder_cfis.save("../Models/job5")
+autoencoder_cfis.save("../Models/job6")
 hist_df = pd.DataFrame(history_cfis.history) 
 
-hist_csv_file = '../Histories/job5.csv'
+hist_csv_file = '../Histories/job6.csv'
 with open(hist_csv_file, mode='a') as f:
     hist_df.to_csv(f)

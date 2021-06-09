@@ -68,7 +68,6 @@ def get_cutouts(hf, tile_ids,tile_indices, batch_size, cutout_size, bands="all")
         band_indices = [0]   
  
     l = len(band_indices)
-    print(cutout_size)
     sources = np.zeros((batch_size, cutout_size, cutout_size, l))
     weights = np.zeros((batch_size, cutout_size, cutout_size, l))
     while True:
@@ -90,7 +89,7 @@ def get_cutouts(hf, tile_ids,tile_indices, batch_size, cutout_size, bands="all")
 def train_autoencoder(hf, tile_ids, model, train_indices, val_indices, n_epochs, batch_size, cutout_size, all_callbacks = None, bands="all"):
     n_cutouts_train = 0
     for i in train_indices:
-        img_group = hf.get(tile_ids[i] + "/IMAGES")        
+        img_group = hf.get(tile_ids[i] + "/IMAGES")   
         n_cutouts_train += len(img_group)
     
     n_cutouts_val = 0    

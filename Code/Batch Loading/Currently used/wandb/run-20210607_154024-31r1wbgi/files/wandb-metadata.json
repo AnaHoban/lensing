@@ -1,0 +1,26 @@
+{
+    "os": "Linux-3.10.0-1127.19.1.el7.x86_64-x86_64-with-glibc2.2.5",
+    "python": "3.8.2",
+    "heartbeatAt": "2021-06-07T22:41:00.284016",
+    "startedAt": "2021-06-07T22:40:24.708005",
+    "docker": null,
+    "gpu": "Tesla P100-PCIE-12GB",
+    "gpu_count": 1,
+    "cpu_count": 24,
+    "cuda": null,
+    "args": [
+        "-f",
+        "/home/anahoban/.local/share/jupyter/runtime/kernel-d3c1ab37-df52-491e-aff0-bdd073f88fb2.json"
+    ],
+    "state": "running",
+    "program": "<python with no main file>",
+    "git": {
+        "remote": "https://github.com/AnaHoban/lensing.git",
+        "commit": "1586206dc4a79d386c1b9457c7044a93983715d9"
+    },
+    "email": null,
+    "root": "/scratch/anahoban/stronglens",
+    "host": "cdr340.int.cedar.computecanada.ca",
+    "username": "anahoban",
+    "executable": "/home/anahoban/lensing/bin/python"
+}

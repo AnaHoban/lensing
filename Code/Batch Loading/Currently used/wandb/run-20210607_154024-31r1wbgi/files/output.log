@@ -1,0 +1,20 @@
+
+Epoch 1/2
+
+
+
+
+
+
+10/10 [==============================] - ETA: 0s - loss: 1.8568e-04
+Epoch 00001: val_loss improved from inf to 0.00049, saving model to ../Models/job8.h5
+10/10 [==============================] - 81s 8s/step - loss: 1.8568e-04 - val_loss: 4.9487e-04
+Epoch 2/2
+
+
+
+
+
+
+10/10 [==============================] - ETA: 0s - loss: 5.0500e-05
+Epoch 00002: val_loss improved from 0.00049 to 0.00049, saving model to ../Models/job8.h5

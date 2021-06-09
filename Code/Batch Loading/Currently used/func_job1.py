@@ -65,7 +65,7 @@ def get_cutouts(hf, tile_ids,tile_indices, batch_size, cutout_size, bands="all")
     else:
         print('WARNING: unrecognized band')
         band_indices = [0]   
- 
+    
     l = len(band_indices)
     sources = np.zeros((batch_size, cutout_size, cutout_size, l))
     weights = np.zeros((batch_size, cutout_size, cutout_size, l))
@@ -96,8 +96,8 @@ def train_autoencoder(hf, tile_ids, model, train_indices, val_indices, n_epochs,
         img_group = hf.get(tile_ids[i] + "/IMAGES")        
         n_cutouts_val += len(img_group)
     
-    train_steps = n_cutouts_train // batch_size
-    val_steps = n_cutouts_val // batch_size
+    train_steps = 1 #n_cutouts_train // batch_size
+    val_steps = 1 #n_cutouts_val // batch_size
     
     history = model.fit(get_cutouts(hf, tile_ids, train_indices, batch_size, cutout_size, bands), 
                         epochs=n_epochs, steps_per_epoch=train_steps, 
