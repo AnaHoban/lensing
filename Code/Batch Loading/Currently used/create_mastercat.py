@@ -9,10 +9,11 @@ import matplotlib.pyplot as plt
 import csv
 import pandas as pd
 
+print('Starting \n' )
 #tweakable
 cutout_size = 64
 start = 0
-end = 10 #NUMBER OF TILES TAKEN FROM EACH CHANNEL!
+end = 4 #NUMBER OF TILES TAKEN FROM EACH CHANNEL!
 
 #directories
 scratch = os.path.expandvars("$SCRATCH") + '/'
@@ -41,7 +42,7 @@ for tile in tile_list:
     tile_bands = tile.split(" ") 
     if tile_bands == ['']:
         continue
-    else:
+    elif len(tile_bands) == 1 : #just 1 band
         for num_band in range(len(tile_bands)):
             if tile_bands[num_band][-1] == 'r' and (len(tile_ids_r)< end):
                 tile_ids_r.append(tile_bands[num_band][5:12])
@@ -67,7 +68,6 @@ for tile in tile_list:
                  
 tile_list.close()
 
-
 u_cat = []
 r_cat = []
 u_r_cat = []
@@ -82,22 +82,23 @@ for tile_id in tile_ids_u_r:
     r_cat.append(image_dir + 'CFIS.'+ tile_id + '.r' + ".cat")
     u_cat.append(image_dir + 'CFIS.'+ tile_id + '.u' + ".cat")
     
+print(r_cat, u_cat)    
     
 # Copy tiles to $SLURM_TMPDIR
-for n in range(start, end):
+for n in range(start, end+end):
     shutil.copy2(u_cat[n], dest)
     shutil.copy2(r_cat[n], dest)
     
     u_cat[n] = os.path.abspath(dest + os.path.basename(u_cat[n]))
     r_cat[n] = os.path.abspath(dest + os.path.basename(r_cat[n]))
     
-    
+print(r_cat,u_cat)    
 #prepare master cat
 example = table.Table.read(r_cat[1], format="ascii.sextractor")
 keys = example.keys()
 master_catalogue = pd.DataFrame(index = [0], columns = keys + ['TILE'] + ['BAND'] + ['CUTOUT'])
 
-
+print('master cat created \n')
 #populate master cat
 
 for n in range(start, end+end): #single and both channels
@@ -119,21 +120,25 @@ for n in range(start, end+end): #single and both channels
         
         master_catalogue = master_catalogue.append(new_cutout)
         count += 1
+    
+    print(f'tile {root} in r done')
+    
     count=0
     #cutouts from u band
     root = os.path.basename(u_cat[n])[5:12]  # XXX.XXX id
         
-    for i in range(len(ucat)): #each cutout in tile
-        if ucat["FLAGS"][i] != 0 or ucat["MAG_AUTO"][i] >= 99.0 or ucat["MAGERR_AUTO"][i] <= 0 or ucat["MAGERR_AUTO"][i] >= 1:
+    for j in range(len(ucat)): #each cutout in tile
+        if ucat["FLAGS"][j] != 0 or ucat["MAG_AUTO"][j] >= 99.0 or ucat["MAGERR_AUTO"][j] <= 0 or ucat["MAGERR_AUTO"][j] >= 1:
             continue
             
-        new_cutout = pd.DataFrame(index = [i], data=np.array(ucat[i]), columns = keys + ['TILE'] + ['BAND'] + ['CUTOUT'])
-        new_cutout['BAND'] = 'r'
+        new_cutout = pd.DataFrame(index = [j], data=np.array(ucat[j]), columns = keys + ['TILE'] + ['BAND'] + ['CUTOUT'])
+        new_cutout['BAND'] = 'u'
         new_cutout['TILE'] = f"{root}"
         new_cutout['CUTOUT'] = f"c{count}"
         
         master_catalogue = master_catalogue.append(new_cutout)
         count += 1
+    print(f'tile {root} in u done')
     
     print(f"Tile {n+1} completed")
     
