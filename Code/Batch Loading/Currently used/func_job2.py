@@ -15,11 +15,8 @@ import csv
 cutout_dir = os.path.expandvars("$SCRATCH") + "/"
 image_dir = "/home/anahoban/projects/rrg-kyi/astro/cfis/W3/"
 
-#with open(cutout_dir + 'tiles_5channel_41tiles.csv', newline='') as f:
- #   reader = csv.reader(f)
- #   data = list(reader)
-    
-#tile_ids = [i[0] for i in data]
+#csv = pd.read_csv(cutout_dir + 'tiles_unbalanced.csv')
+#tile_ids = list(csv.keys())
 
 def get_test_cutouts(index, tile_ids, n_cutouts, cutout_size, bands="cfis", start=0):
     n = 0
@@ -75,7 +72,8 @@ def get_cutouts(hf, tile_ids,tile_indices, batch_size, cutout_size, bands="all")
             img_group = hf.get(tile_ids[i] + "/IMAGES")
             wt_group = hf.get(tile_ids[i] + "/WEIGHTS")
             n_cutouts = len(img_group)
-            for n in range(n_cutouts):
+            for n in range(n_cutouts-1):
+                n+=1
                 sources[b,:,:,:] = np.array(img_group.get(f"c{n}"))[:,:,band_indices]
                 weights[b,:,:,:] = np.array(wt_group.get(f"c{n}"))[:,:,band_indices]
                 b += 1
@@ -89,10 +87,10 @@ def get_cutouts(hf, tile_ids,tile_indices, batch_size, cutout_size, bands="all")
 def train_autoencoder(hf, tile_ids, model, train_indices, val_indices, n_epochs, batch_size, cutout_size, all_callbacks = None, bands="all"):
     n_cutouts_train = 0
     for i in train_indices:
-        img_group = hf.get(tile_ids[i] + "/IMAGES")   
+        img_group = hf.get(tile_ids[i] + "/IMAGES")
         n_cutouts_train += len(img_group)
     
-    n_cutouts_val = 0    
+    n_cutouts_val = 0  
     for i in val_indices:
         img_group = hf.get(tile_ids[i] + "/IMAGES")        
         n_cutouts_val += len(img_group)

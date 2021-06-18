@@ -17,7 +17,7 @@ import pandas as pd
 #tweakable
 cutout_size = 64
 start = 0
-end = 1 #NUMBER OF TILES TAKEN FROM EACH CHANNEL!
+end = 5 #NUMBER OF TILES TAKEN FROM EACH CHANNEL!
 
 #directories
 scratch = os.path.expandvars("$SCRATCH") + '/'
@@ -28,7 +28,7 @@ src = os.path.expandvars("$SCRATCH") #+ "/test2.h5"
 dest = os.path.expandvars("$SLURM_TMPDIR") + "/"
 
 #hf file
-hf = h5py.File(scratch + "testing_create_cuts.h5", "w")
+hf = h5py.File(scratch + "testing_create_cuts_noisy.h5", "w")
 
 tile_list = open(image_dir + "tiles.list", "r")
 
@@ -156,7 +156,8 @@ for n in range(start, end):
     #suggestion: can read off master cat instead!
     
                                             ####### R #######
-    img_cutout = np.zeros((cutout_size, cutout_size, 5)) #this can be changed to random noise if necessary, don't need to append it in loop
+    img_cutout = np.random.normal(loc = 0.5,scale= 0.13, size=(64,64,5))
+    #np.zeros((cutout_size, cutout_size, 5)) #this can be changed to random noise if necessary, don't need to append it in loop
     wt_cutout  = np.zeros((cutout_size, cutout_size, 5))
     #tiles
     r_image  = fits.open(r_images[n] , memmap=True)
@@ -192,7 +193,8 @@ for n in range(start, end):
     
     
                                             ####### U #######
-    img_cutout = np.zeros((cutout_size, cutout_size, 5)) #this can be changed to random noise if necessary, don't need to append it in loop
+    img_cutout = np.random.normal(loc = 0.5,scale= 0.13, size=(64,64,5))
+    #img_cutout = np.zeros((cutout_size, cutout_size, 5)) #this can be changed to random noise if necessary, don't need to append it in loop
     wt_cutout  = np.zeros((cutout_size, cutout_size, 5))
     #tiles
     u_image  = fits.open(u_images[n] , memmap=True)
