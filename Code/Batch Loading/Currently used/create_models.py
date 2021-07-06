@@ -55,11 +55,15 @@ def create_autoencoder2(shape):
     
     return keras.Model(input_img, decoded)
 
-def create_classifier(encoder):
+def create_classifier(encoder, output_bias):
     '''Binary classifier'''
     model = keras.Sequential(encoder)
     model.add(keras.layers.Flatten())
-    model.add(keras.layers.Dense(128))
-    model.add(keras.layers.Dense(64))
-    model.add(keras.layers.Dense(1, activation="sigmoid"))   
+    
+    #model.add(keras.layers.Dense(128))
+    #model.add(keras.layers.Dense(64))
+    model.add(keras.layers.Dense(1000))
+    #model.add(keras.layers.Dense(64))
+    #model.add(keras.layers.Dense(32))
+    model.add(keras.layers.Dense(1, activation="sigmoid",bias_initializer=keras.initializers.Constant(output_bias)))   
     return model

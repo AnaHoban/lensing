@@ -37,6 +37,24 @@ tile_ids = [i[0] for i in data]
 
 
 #for first notebook: Create Filtered Cutouts.ipynb
+def create_cutouts_nonorm(img, wt, x, y, band):
+    ''' Creates the image and weight cutouts given a tile, the position of the center and the band
+    WITHOUT NORMALIZING THEM'''
+    
+    img_cutout = Cutout2D(img.data, (x, y), cutout_size, mode="partial", fill_value=0).data
+    wt_cutout  = Cutout2D(wt.data, (x, y), cutout_size, mode="partial", fill_value=0).data
+    img_cutout[np.isnan(img_cutout)] = 0
+    wt_cutout[np.isnan(wt_cutout)] = 0
+
+    return (img_cutout, wt_cutout)
+
+def normalizing(img_cut, wt_cut, tile):
+    #can use tile to normalise
+    
+    #can use just cutout info to normalize
+    
+    #arcsinh normalization
+    return (np.arcsinh(img_cut), wt_cut)
 
 def create_cutouts(img, wt, x, y, band):
     ''' Creates the image and weight cutouts given a tile, the position of the center and the band '''
@@ -92,6 +110,41 @@ def get_test_cutouts(index, n_cutouts, bands="all", start=0):
         n += 1
         if n == n_cutouts:
             return (sources, weights)
+        
+def get_test_cutouts_shuffled(cutout_ids, n_cutouts, cutout_size, bands="cfis", start=0):
+    n = 0
+    if bands == "all":
+        band_indices = [0, 1, 2, 3, 4]
+        l = len(band_indices)
+        sources = np.zeros((n_cutouts, cutout_size, cutout_size, l))
+        weights = np.zeros((n_cutouts, cutout_size, cutout_size, l))
+        
+        
+    elif bands == "cfis":
+        band_indices = [0,2]
+        l = len(band_indices)
+        sources = np.zeros((n_cutouts, cutout_size, cutout_size, l))
+        weights = np.zeros((n_cutouts, cutout_size, cutout_size, l))
+        
+    else: # PS1
+        band_indices = [1, 3, 4]
+        l = len(band_indices)
+        sources = np.zeros((n_cutouts, cutout_size, cutout_size, l))
+        weights = np.zeros((n_cutouts, cutout_size, cutout_size, l))
+       
+    for i in cutout_ids:
+        (tile, cut) = i.split(' ')
+
+        #get image    
+        img = hf.get(tile + "/IMAGES/"  + cut)
+        wt  = hf.get(tile + "/WEIGHTS/" + cut)
+
+        sources[n,:,:,:] = np.array(img)[:,:,band_indices]
+        weights[n,:,:,:] = np.array(wt)[:,:,band_indices]
+        n += 1
+        if n == n_cutouts:
+            #return sources #if no weights
+            return np.concatenate((sources, weights), axis=-1) #if we train with weights
         
         
 def get_cutouts(tile_indices, batch_size, bands="all"):
@@ -250,27 +303,34 @@ def plot_1_cutout(images, weights, figname, bands, start=0):
         axes[i].set_title(bands[i])
     #plt.savefig(f"../Plots/Weights 185.270 c{start} 64p.png")
     
-def plot_mosaic(images, figname): 
-    '''plotting 50 images, 5 bands'''
-    fig, axes = plt.subplots(50,len(bands), figsize=(5,50))
-    #fig.subplots_adjust(left=0.02, bottom=0.06, right=0.95, top=0.94, wspace=0.45)
-    i=0
-    for row in range(50):
-        for col in range(len(bands)):
-            norm = ImageNormalize(images[row,:,:,col], interval=ZScaleInterval())
-            im = axes[row][col].imshow(images[row,:,:,col], norm=norm)
-            #fig.colorbar(im, fraction=0.045, ax=axes[row][col])
-            axes[row][col].set_yticks([]);axes[row][col].set_xticks([])
-            if row == 0:
-                axes[row][col].set_title(bands[col])
-            i += 1
-    plt.savefig("../Plots/" + figname)
+def plot_mosaic(images_true, images_pred, images_res, bands, figname):
+    n = len(bands)
+    fig,axes = plt.subplots(images_true.shape[0], len(bands)*n*2, figsize =(40,250))
+    plt.setp(axes, xticks=[], yticks=[])
     
-def min_max_pixels(images, bands, start=0):
-    for i in range(len(bands)):
-        print(bands[i])
-        print("Min pixel value: " + str(np.min(images[start,:,:,i])))
-        print("Max pixel value: " + str(np.max(images[start,:,:,i])))
+    for img in range(images_true.shape[0]):
+        for bd in range(len(bands)):
+            norm_true  = ImageNormalize(images_true[img,:,:,bd], interval=ZScaleInterval())
+            norm_pred  = ImageNormalize(images_pred[img,:,:,bd], interval=ZScaleInterval())
+            
+            weighted_res = images_res[img,:,:,bd]*images_true[img,:,:,bd+1*n]
+            norm_wres  = ImageNormalize( weighted_res, interval=ZScaleInterval())
+            
+            imw = axes[img][bd].imshow(images_true[img,:,:,bd+1*n])
+            im1 = axes[img][bd+1*n].imshow(images_true[img,:,:,bd], norm = norm_true)
+            im2 = axes[img][bd+2*n].imshow(images_pred[img,:,:,bd], norm = norm_pred)
+            im3 = axes[img][bd+3*n].imshow(weighted_res, norm = norm_wres)
+
+            if img == 0:
+                axes[img][bd].set_title(bands[bd])                
+                axes[img][bd].set_title(bands[bd])
+                axes[img][bd+1*n].set_title(bands[bd])                
+                axes[img][bd+1*n].set_title(bands[bd])
+                axes[img][bd+2*n].set_title(bands[bd])                
+                axes[img][bd+2*n].set_title(bands[bd])
+                axes[img][bd+3*n].set_title(bands[bd])                
+                axes[img][bd+3*n].set_title(bands[bd])
+    plt.savefig("../Plots/" + figname)
         
 def plot_hist(images, wts, figname, bands, start=0):
     '''plots histogram of source, reconstructed and residuals for 1 image (start = index) for all bands '''
@@ -347,7 +407,7 @@ def get_confirmed_cutouts(hf_pos, filter_dict, label_dir, label_subdir):
             count += 1
     return confirmed_cutouts
 
-#only if negatie cutouts were not created
+#only if negative cutouts were not created
 def create_cutout(fits_file, x, y):
     cutout = Cutout2D(fits_file[0].data, (x, y), cutout_size, mode="partial", fill_value=0).data
     if np.count_nonzero(np.isnan(cutout)) >= 0.05*cutout_size**2 or np.count_nonzero(cutout) == 0: # Don't use this cutout
